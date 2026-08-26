@@ -1,0 +1,2 @@
+-- Superseded by propcare_full_schema.sql
+-- See propcare_full_schema.sql for the current complete schema.

@@ -1,0 +1,3 @@
+-- Superseded by propcare_full_schema.sql
+-- The projects table from the original starter template is no longer used.
+-- Run propcare_full_schema.sql directly in Supabase SQL Editor instead.
