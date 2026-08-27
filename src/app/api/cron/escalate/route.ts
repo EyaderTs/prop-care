@@ -6,13 +6,18 @@ import { getLogger } from "@/core/logging";
 const logger = getLogger("api.cron.escalate");
 
 function isAuthorized(request: Request): boolean {
+  // Vercel Cron Jobs authenticate with the CRON_SECRET automatically
+  // via the Authorization header when the route is listed in vercel.json
   const secret = process.env["CRON_SECRET"];
-  if (!secret) {
-    // No secret configured — block all access
-    return false;
-  }
   const auth = request.headers.get("authorization") ?? "";
-  return auth === `Bearer ${secret}`;
+
+  if (secret && auth === `Bearer ${secret}`) return true;
+
+  // Vercel also sets this header on internally-triggered cron jobs
+  const vercelCronHeader = request.headers.get("x-vercel-cron");
+  if (vercelCronHeader === "1") return true;
+
+  return false;
 }
 
 export async function POST(request: Request) {
