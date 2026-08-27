@@ -5,6 +5,7 @@ export {
   escalationOverdueAppointmentAlert,
   escalationUnassignedAlert,
   managerNewRequestAlert,
+  meetingScheduledEmail,
   requestCancelledNotification,
   requestCompletedNotification,
   technicianJobBriefing,

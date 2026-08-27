@@ -6,3 +6,5 @@ export {
   findNextAvailableSlot,
   getBusySlots,
 } from "./calendar";
+export type { SlotCheckResult, SuggestedSlot } from "./availability";
+export { checkSlotAndSuggest } from "./availability";

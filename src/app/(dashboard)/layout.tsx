@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -30,6 +31,7 @@ const tenantNav = [
 const managerNav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/maintenance", label: "All Requests", icon: ClipboardList },
+  { href: "/dashboard/meetings", label: "Meetings", icon: CalendarDays },
   { href: "/dashboard/technicians", label: "Technicians", icon: Wrench },
   { href: "/dashboard/tenants", label: "Tenants", icon: Users },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -180,12 +182,20 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             {isManager ? "Requests" : "My Requests"}
           </a>
           {isManager && (
-            <a
-              href="/dashboard/technicians"
-              className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-            >
-              Technicians
-            </a>
+            <>
+              <a
+                href="/dashboard/meetings"
+                className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Meetings
+              </a>
+              <a
+                href="/dashboard/technicians"
+                className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Technicians
+              </a>
+            </>
           )}
           <ThemeToggle />
           <form action={signOut}>

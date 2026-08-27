@@ -630,3 +630,58 @@ export function escalationUnassignedAlert(opts: {
 
   return { subject, htmlContent };
 }
+
+// ─── Meeting scheduled notification ──────────────────────────────────────────
+
+export function meetingScheduledEmail(opts: {
+  recipientName: string;
+  recipientRole: "technician" | "manager";
+  managerName: string;
+  technicianName: string;
+  purpose: string;
+  startDateTime: Date;
+  endDateTime: Date;
+  calendarEventId?: string;
+}): { subject: string; htmlContent: string } {
+  const tz = process.env["GOOGLE_CALENDAR_TIMEZONE"] ?? "Africa/Addis_Ababa";
+  const fmt = (d: Date) =>
+    d.toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: tz });
+
+  const subject = `Meeting Confirmed: ${opts.purpose}`;
+
+  const whoLine =
+    opts.recipientRole === "technician"
+      ? `Property Manager <strong>${opts.managerName}</strong> has scheduled a meeting with you.`
+      : `Your meeting with <strong>${opts.technicianName}</strong> has been confirmed.`;
+
+  const htmlContent = layout(
+    subject,
+    `<p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#111827;">Dear ${opts.recipientName},</p>
+    <p style="margin:0 0 24px;font-size:13px;color:#6b7280;">Meklit Tower · PropCare Scheduling</p>
+
+    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.7;">${whoLine}</p>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
+      ${sectionHeading("Meeting Details")}
+      <table cellpadding="0" cellspacing="0" style="width:100%;">
+        ${infoRow("Purpose", `<strong>${opts.purpose}</strong>`)}
+        ${infoRow("Date & Time", fmt(opts.startDateTime))}
+        ${infoRow("Duration", `${Math.round((opts.endDateTime.getTime() - opts.startDateTime.getTime()) / 60000)} minutes`)}
+        ${infoRow("Manager", opts.managerName)}
+        ${infoRow("Technician", opts.technicianName)}
+        ${infoRow("Location", "Meklit Tower — to be confirmed by manager")}
+      </table>
+    </div>
+
+    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.7;">
+      This meeting has been added to the technician's Google Calendar. Please be available
+      at the scheduled time. If you need to reschedule, please contact the property management office.
+    </p>
+
+    <p style="margin:0 0 4px;font-size:14px;color:#374151;">Yours sincerely,</p>
+    <p style="margin:0;font-size:14px;font-weight:600;color:#111827;">The Management Team</p>
+    <p style="margin:0;font-size:13px;color:#6b7280;">Meklit Tower — PropCare</p>`,
+  );
+
+  return { subject, htmlContent };
+}
