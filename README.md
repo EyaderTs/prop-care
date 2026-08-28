@@ -1,111 +1,130 @@
-# Next.js AI Coding Starter
+# PropCare — AI Property Maintenance Assistant
 
-Production-ready Next.js SaaS starter optimized for AI-assisted development with Bun, Supabase, and strict TypeScript.
+An AI-powered maintenance coordination system for residential property management. Tenants submit requests in plain language, Gemini AI triages them, and the agent handles scheduling, email notifications, follow-ups, and escalations automatically.
 
-> 📖 **New to AI-optimized codebases?** Check out the [Codebase Guide](./CODEBASE-GUIDE.md) for a comprehensive walkthrough of the patterns and principles used in this template.
+**Live demo:** https://prop-care-sigma.vercel.app
 
-## Stack
+---
 
-| Technology | Choice | AI Agent Benefit |
-|------------|--------|------------------|
-| Runtime | Bun | Faster iteration cycles |
-| Framework | Next.js 16 | Predictable file conventions |
-| Linting | Biome | 10-25x faster feedback loop |
-| Type Safety | TS strict | Unambiguous errors, types as docs |
-| Database | Drizzle ORM | Can't write invalid queries |
-| Auth | Supabase Auth | Clear errors, 50K MAU free |
-| Validation | Zod | Structured errors, self-documenting |
-| Logging | Pino | Machine-readable debugging context |
-| Testing | Bun test | 10x faster than Jest |
-| UI | shadcn/ui | Agent can read/modify components |
+## What it does
 
-## Quick Start
+| Workflow | Description |
+|---|---|
+| **A — AI Triage** | Tenant submits a request in plain language → Gemini classifies category, urgency, safety risk, and suggests a technician |
+| **B — Approval & Dispatch** | Manager reviews AI analysis, approves a technician → Google Calendar event created + emails sent to tenant and technician |
+| **C — Resolution** | Manager marks ticket as completed → tenant receives a completion notification |
+| **D — Escalation** | Background job checks for stuck tickets → alerts manager if unassigned, asks tenant if work was done, escalates if unresolved |
+| **E — Meeting Scheduler** | Manager types a natural language meeting request → Gemini parses it, checks Google Calendar availability, books the event |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Server Actions) |
+| Database & Auth | Supabase (PostgreSQL + Auth) |
+| ORM | Drizzle ORM |
+| AI | Google Gemini API |
+| Email | Brevo (Sendinblue) |
+| Calendar | Google Calendar API (Service Account) |
+| Scheduling | cron-job.org → `/api/cron/escalate` |
+| Hosting | Vercel |
+| UI | shadcn/ui + Tailwind CSS v4 |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── (auth)/                  # Login & registration
+│   ├── (dashboard)/             # All protected pages
+│   │   └── dashboard/
+│   │       ├── maintenance/     # Request list, detail, new request
+│   │       ├── meetings/        # AI meeting scheduler
+│   │       ├── technicians/     # Technician management
+│   │       └── tenants/         # Tenant list (manager only)
+│   └── api/
+│       ├── cron/escalate/       # Secured cron endpoint
+│       └── escalate/respond/    # Tenant email action links
+├── core/
+│   ├── gemini/                  # AI triage + meeting parser
+│   ├── google-calendar/         # Calendar events + availability
+│   ├── email/                   # Brevo client + all email templates
+│   ├── escalation/              # Escalation engine + timeline
+│   └── database/                # Drizzle schema & client
+└── features/
+    ├── maintenance/             # Requests repository & service
+    ├── technicians/             # Technician repository & service
+    └── tenants/                 # Tenant profile repository & service
+```
+
+---
+
+## Roles
+
+| Role | Access |
+|---|---|
+| **Tenant** | Submit requests, track status, receive email updates |
+| **Manager** | Full dashboard — review AI analysis, approve dispatch, manage technicians and tenants, run escalation checks |
+
+Register at `/register` and select your role. Building name is pre-set to **Meklit Tower**.
+
+---
+
+## Local Setup
 
 ```bash
 # Install dependencies
 bun install
 
-# Set up environment
+# Copy env file and fill in your credentials
 cp .env.example .env
-# Edit .env with your Supabase credentials
 
-# Push database schema
-bun run db:push
+# Run database migrations (in Supabase SQL Editor)
+# Run: drizzle/migrations/propcare_full_schema.sql
+# Run: drizzle/migrations/escalation_columns.sql
 
-# Start development server
+# Start dev server
 bun run dev
 ```
 
-## Commands
+## Required Environment Variables
 
 ```bash
-bun run dev          # Start development server
-bun run build        # Production build
-bun run lint         # Check for lint/format errors
-bun run lint:fix     # Auto-fix lint/format issues
-bun test             # Run tests with coverage
-bun run db:studio    # Open Drizzle Studio GUI
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+DATABASE_URL=
+
+GEMINI_API_KEY=
+GOOGLE_SERVICE_ACCOUNT_JSON=        # Full JSON as single line
+GOOGLE_CALENDAR_TIMEZONE=Africa/Addis_Ababa
+
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=PropCare · Meklit Tower
+
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+CRON_SECRET=your-secret-here
 ```
 
-## Architecture
+## Escalation Cron Job
 
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/            # Auth pages (login, register)
-│   ├── (dashboard)/       # Protected pages
-│   └── api/               # API routes
-├── core/                   # Shared infrastructure
-│   ├── config/            # Environment validation
-│   ├── database/          # Drizzle client & schema
-│   ├── logging/           # Pino structured logging
-│   └── supabase/          # Supabase clients
-├── features/              # Vertical slices
-│   ├── auth/              # Auth actions & hooks
-│   └── projects/          # Example feature slice
-├── shared/                # Cross-feature utilities
-│   ├── schemas/           # Pagination, errors
-│   └── utils/             # Date, format helpers
-└── components/            # UI components
-    └── ui/                # shadcn/ui components
-```
+The `/api/cron/escalate` endpoint is called hourly by [cron-job.org](https://cron-job.org).  
+Set the `Authorization` header to `Bearer <CRON_SECRET>` in the cron job config.
 
-## Vertical Slice Pattern
+In development (`NODE_ENV !== production`) thresholds are **1–2 minutes** for easy testing.  
+In production they switch automatically to **24h / 12h**.
 
-Each feature is self-contained:
+---
 
-```
-src/features/{feature}/
-├── models.ts      # Drizzle types
-├── schemas.ts     # Zod validation
-├── repository.ts  # Database queries
-├── service.ts     # Business logic
-├── errors.ts      # Custom errors
-├── index.ts       # Public API
-└── tests/         # Feature tests
-```
-
-## AI Feedback Loop
-
-The stack is optimized for AI agents to self-correct:
-
-```
-Generate Code → Run Checks → Parse Errors → Fix Code → Repeat
-```
-
-Checks produce machine-readable feedback:
-- TypeScript: Type errors with file:line
-- Biome: Lint errors with suggestions
-- Tests: Failed assertions with expected/actual
-- Logs: Structured JSON with context
-
-## Environment Variables
+## Key Commands
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Database (use transaction pooler for serverless)
-DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+bun run dev        # Development server
+bun run build      # Production build
+bun run lint       # Lint check
+bun test           # Run tests
 ```
